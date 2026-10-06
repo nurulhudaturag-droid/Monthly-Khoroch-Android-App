@@ -50,6 +50,7 @@ import com.example.data.model.MonthYear
 import com.example.ui.dialogs.AddEditExpenseDialog
 import com.example.ui.dialogs.BulkBudgetDialog
 import com.example.ui.dialogs.SetBudgetDialog
+import com.example.ui.dialogs.SummarySlipDialog
 import com.example.ui.dialogs.UpdateDialog
 import com.example.update.UpdateState
 import com.example.ui.screens.DashboardScreen
@@ -145,10 +146,12 @@ fun MainAppScaffold(viewModel: MonthlyKhorochViewModel) {
     var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
     var showSetBudgetDialog by remember { mutableStateOf(false) }
     var showBulkBudgetDialog by remember { mutableStateOf(false) }
+    var showSummarySlip by remember { mutableStateOf(false) }
 
     // Core StateFlows needed across the scaffold and dashboard
     val selectedMonthYear by viewModel.selectedMonthYear.collectAsStateWithLifecycle()
     val currentMonthSummary by viewModel.currentMonthSummary.collectAsStateWithLifecycle()
+    val currentMonthExpenses by viewModel.currentMonthExpenses.collectAsStateWithLifecycle()
     val recentMonthlySummaries by viewModel.recentMonthlySummaries.collectAsStateWithLifecycle()
     val currencySymbol by viewModel.currencySymbol.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
@@ -250,6 +253,17 @@ fun MainAppScaffold(viewModel: MonthlyKhorochViewModel) {
                     snackbarHostState.showSnackbar("${BanglaFormatter.toBanglaDigits(list.size.toString())} টি মাসের বাজেট সফলভাবে সেট করা হয়েছে।")
                 }
             }
+        )
+    }
+
+    // Monthly Summary Slip Dialog
+    if (showSummarySlip) {
+        SummarySlipDialog(
+            monthYear = selectedMonthYear,
+            summary = currentMonthSummary,
+            expenses = currentMonthExpenses,
+            currencySymbol = currencySymbol,
+            onDismiss = { showSummarySlip = false }
         )
     }
 
@@ -378,13 +392,12 @@ fun MainAppScaffold(viewModel: MonthlyKhorochViewModel) {
                         onAddExpenseClick = {
                             expenseToEdit = null
                             showAddExpenseDialog = true
-                        }
+                        },
+                        onViewSummary = { showSummarySlip = true }
                     )
                 }
 
                 MainTab.MONTH -> {
-                    val currentMonthExpenses by viewModel.currentMonthExpenses.collectAsStateWithLifecycle()
-
                     MonthScreen(
                         currentMonthYear = selectedMonthYear,
                         summary = currentMonthSummary,
@@ -406,6 +419,7 @@ fun MainAppScaffold(viewModel: MonthlyKhorochViewModel) {
                                 }
                             }
                         },
+                        onPickMonth = { viewModel.selectMonthYear(it) },
                         onEditExpense = { expense -> expenseToEdit = expense },
                         onDeleteExpense = { expense ->
                             viewModel.deleteExpense(expense)

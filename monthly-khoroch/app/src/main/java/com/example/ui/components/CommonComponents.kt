@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
@@ -129,6 +130,7 @@ fun MonthSelectorHeader(
     currentMonthYear: MonthYear,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onOpenPicker: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -158,13 +160,26 @@ fun MonthSelectorHeader(
                 )
             }
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clickable { onOpenPicker() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .testTag("btn_open_month_picker")
+            ) {
                 Text(
                     text = "${BanglaFormatter.getMonthName(currentMonthYear.month)} ${BanglaFormatter.toBanglaDigits(currentMonthYear.year.toString())}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             IconButton(

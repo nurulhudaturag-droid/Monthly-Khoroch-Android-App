@@ -20,7 +20,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,6 +54,7 @@ fun ExpenseScreen(
     onEditExpense: (Expense) -> Unit,
     onDeleteExpense: (Expense) -> Unit,
     onAddExpenseClick: () -> Unit,
+    onViewSummary: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
@@ -125,34 +128,54 @@ fun ExpenseScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Filter Chips
+            // Filter row: current month (always) + sort options
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = currentFilter == ExpenseFilter.ALL,
-                    onClick = { onFilterChange(ExpenseFilter.ALL) },
-                    label = { Text("সকল খরচ", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_chip_all")
-                )
-                FilterChip(
-                    selected = currentFilter == ExpenseFilter.THIS_MONTH,
-                    onClick = { onFilterChange(ExpenseFilter.THIS_MONTH) },
-                    label = { Text("চলতি মাস", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_chip_this_month")
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "চলতি মাস · সকল খরচ",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
                 FilterChip(
                     selected = currentFilter == ExpenseFilter.HIGHEST_FIRST,
-                    onClick = { onFilterChange(ExpenseFilter.HIGHEST_FIRST) },
+                    onClick = {
+                        onFilterChange(
+                            if (currentFilter == ExpenseFilter.HIGHEST_FIRST) ExpenseFilter.ALL else ExpenseFilter.HIGHEST_FIRST
+                        )
+                    },
                     label = { Text("সর্বোচ্চ খরচ", fontSize = 12.sp) },
                     modifier = Modifier.testTag("filter_chip_highest")
                 )
                 FilterChip(
                     selected = currentFilter == ExpenseFilter.LOWEST_FIRST,
-                    onClick = { onFilterChange(ExpenseFilter.LOWEST_FIRST) },
+                    onClick = {
+                        onFilterChange(
+                            if (currentFilter == ExpenseFilter.LOWEST_FIRST) ExpenseFilter.ALL else ExpenseFilter.LOWEST_FIRST
+                        )
+                    },
                     label = { Text("সর্বনিম্ন খরচ", fontSize = 12.sp) },
                     modifier = Modifier.testTag("filter_chip_lowest")
                 )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedButton(
+                onClick = onViewSummary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_view_summary"),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("সারসংক্ষেপ দেখুন")
             }
         }
 

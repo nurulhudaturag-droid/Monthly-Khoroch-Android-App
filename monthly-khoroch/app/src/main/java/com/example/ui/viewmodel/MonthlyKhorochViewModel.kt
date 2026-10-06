@@ -120,22 +120,19 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
     val filterOption: StateFlow<ExpenseFilter> = _filterOption.asStateFlow()
 
     val filteredExpenses: StateFlow<List<Expense>> = combine(
-        allExpenses,
         currentMonthExpenses,
-        _selectedMonthYear,
         _searchQuery,
         _filterOption
-    ) { all, currentMonth, my, query, filter ->
-        // When filtered by this month, use currentMonth directly to avoid scanning all historical entries
-        var list = if (filter == ExpenseFilter.THIS_MONTH) currentMonth else all
+    ) { currentMonth, query, filter ->
+        var list = currentMonth
 
-        // 1. Text Search (Bangla & English match)
+        // Text Search (Bangla & English match)
         if (query.isNotBlank()) {
             val q = query.trim().lowercase()
             list = list.filter { it.productName.lowercase().contains(q) }
         }
 
-        // 2. Sorting
+        // Sorting within the selected month's expenses
         when (filter) {
             ExpenseFilter.HIGHEST_FIRST -> list.sortedByDescending { it.totalPoisha }
             ExpenseFilter.LOWEST_FIRST -> list.sortedBy { it.totalPoisha }

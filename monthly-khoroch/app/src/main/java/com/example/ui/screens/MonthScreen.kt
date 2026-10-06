@@ -43,6 +43,7 @@ import com.example.ui.components.DailyGroupCard
 import com.example.ui.components.EmptyStateView
 import com.example.ui.components.MonthSelectorHeader
 import com.example.ui.components.StatusBadge
+import com.example.ui.dialogs.MonthPickerDialog
 import com.example.ui.theme.StatusGreen
 import com.example.ui.theme.StatusRed
 import com.example.util.BanglaFormatter
@@ -58,12 +59,14 @@ fun MonthScreen(
     onSetBudgetClick: () -> Unit,
     onBulkBudgetClick: () -> Unit,
     onCopyPreviousBudgetClick: () -> Unit,
+    onPickMonth: (MonthYear) -> Unit = {},
     onEditExpense: (Expense) -> Unit,
     onDeleteExpense: (Expense) -> Unit,
     onAddExpenseClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var showMonthPicker by remember { mutableStateOf(false) }
 
     val groupedExpenses = remember(expenses) {
         expenses.groupBy { it.date }.map { (date, list) ->
@@ -88,6 +91,17 @@ fun MonthScreen(
         )
     }
 
+    if (showMonthPicker) {
+        MonthPickerDialog(
+            current = currentMonthYear,
+            onSelect = { my ->
+                onPickMonth(my)
+                showMonthPicker = false
+            },
+            onDismiss = { showMonthPicker = false }
+        )
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -109,7 +123,8 @@ fun MonthScreen(
             MonthSelectorHeader(
                 currentMonthYear = currentMonthYear,
                 onPrevious = onPreviousMonth,
-                onNext = onNextMonth
+                onNext = onNextMonth,
+                onOpenPicker = { showMonthPicker = true }
             )
         }
 
