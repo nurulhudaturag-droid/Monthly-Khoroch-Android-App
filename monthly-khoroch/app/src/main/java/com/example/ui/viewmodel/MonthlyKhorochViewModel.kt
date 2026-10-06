@@ -72,7 +72,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = repository.getCachedMonthlySummary(initialYear, initialMonth)
                 ?: MonthlySummary(initialYear, initialMonth, 0L, 0L, 0L, 0.0, BudgetStatus.NO_BUDGET, 0)
         )
@@ -83,7 +83,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = repository.getCachedRecentExpenses(initialYear, initialMonth) ?: emptyList()
         )
 
@@ -108,7 +108,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
@@ -145,7 +145,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         .flowOn(Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = repository.getCachedRecentExpenses(initialYear, initialMonth) ?: emptyList()
         )
 
