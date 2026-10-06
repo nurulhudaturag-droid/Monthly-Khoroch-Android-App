@@ -34,11 +34,11 @@ object SummarySlipExporter {
 
     private const val PADDING = 60f
     private const val COL_GAP = 40f
-    private const val NAVY = Color.rgb(0x0A, 0x19, 0x31)
-    private const val INK = Color.rgb(0x11, 0x11, 0x11)
-    private const val MUTED = Color.rgb(0x55, 0x55, 0x55)
-    private const val DIVIDER = Color.rgb(0xD9, 0xD9, 0xD9)
-    private const val CARD_BG = Color.rgb(0xF3, 0xF7, 0xFB)
+    private val NAVY = Color.rgb(0x0A, 0x19, 0x31)
+    private val INK = Color.rgb(0x11, 0x11, 0x11)
+    private val MUTED = Color.rgb(0x55, 0x55, 0x55)
+    private val DIVIDER = Color.rgb(0xD9, 0xD9, 0xD9)
+    private val CARD_BG = Color.rgb(0xF3, 0xF7, 0xFB)
 
     fun createSlipBitmap(
         monthYear: MonthYear,
@@ -69,17 +69,17 @@ object SummarySlipExporter {
         bold.textSize = 34f
         val monthLabel = "${BanglaFormatter.getMonthName(monthYear.month)} " +
             BanglaFormatter.toBanglaDigits(monthYear.year.toString())
-        canvas.drawText(monthLabel, SLIP_WIDTH / 2f, y, bold.copy(color = INK))
+        canvas.drawText(monthLabel, SLIP_WIDTH / 2f, y, Paint(bold).apply { color = INK })
         y += 40f
 
         regular.textSize = 26f
         regular.textAlign = Paint.Align.CENTER
         val stamp = "প্রস্তুত: ${BanglaFormatter.toBanglaDigits(SimpleDateFormat("dd.MM.yyyy, hh:mm", Locale.US).format(Date()))}"
-        canvas.drawText(stamp, SLIP_WIDTH / 2f, y, regular.copy(color = MUTED))
+        canvas.drawText(stamp, SLIP_WIDTH / 2f, y, Paint(regular).apply { color = MUTED })
         y += 50f
         regular.textAlign = Paint.Align.LEFT
 
-        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 4f, regular.copy(color = NAVY))
+        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 4f, Paint(regular).apply { color = NAVY })
         y += 30f
         bold.textAlign = Paint.Align.LEFT
 
@@ -96,11 +96,14 @@ object SummarySlipExporter {
             color = NAVY
         })
 
-        val labelPaint = regular.copy().apply {
+        val labelPaint = Paint(regular).apply {
             textSize = 30f
             color = MUTED
         }
-        val valuePaint = bold.copy(color = NAVY).apply { textSize = 30f }
+        val valuePaint = Paint(bold).apply {
+            textSize = 30f
+            color = NAVY
+        }
         val x = PADDING + 40f
         val xRight = SLIP_WIDTH - PADDING - 40f
         var cy = cardTop + 50f
@@ -127,11 +130,14 @@ object SummarySlipExporter {
         y = cardTop + 380f
 
         // ---- Items heading ----
-        bold.copy(color = NAVY).apply { textSize = 36f }.let { paint ->
+        Paint(bold).apply {
+            textSize = 36f
+            color = NAVY
+        }.let { paint ->
             canvas.drawText("খরচের তালিকা", PADDING, y, paint)
         }
         y += 22f
-        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 2f, regular.copy(color = DIVIDER))
+        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 2f, Paint(regular).apply { color = DIVIDER })
         y += 44f
 
         // ---- Itemized list: two columns, left first, then right ----
@@ -140,9 +146,18 @@ object SummarySlipExporter {
         var col = 0
         var itemY = topY
 
-        val namePaint = bold.copy(color = INK).apply { textSize = 28f }
-        val metaPaint = regular.copy(color = MUTED).apply { textSize = 24f }
-        val amountPaint = bold.copy(color = NAVY).apply { textSize = 28f }
+        val namePaint = Paint(bold).apply {
+            textSize = 28f
+            color = INK
+        }
+        val metaPaint = Paint(regular).apply {
+            textSize = 24f
+            color = MUTED
+        }
+        val amountPaint = Paint(bold).apply {
+            textSize = 28f
+            color = NAVY
+        }
 
         fun colX() = PADDING + col * (colWidth + COL_GAP)
 
