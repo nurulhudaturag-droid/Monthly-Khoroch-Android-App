@@ -68,7 +68,7 @@ class KhorochRepository(
         memoryCache.invalidateMonth(year, month)
     }
 
-    fun getAllExpensesSync(): List<Expense> = expenseDao.getAllExpensesSync()
+    suspend fun getAllExpensesSync(): List<Expense> = expenseDao.getAllExpensesSync()
 
     fun getExpensesForMonth(year: Int, month: Int): Flow<List<Expense>> =
         expenseDao.getExpensesForMonth(year, month).onEach { expenses ->
