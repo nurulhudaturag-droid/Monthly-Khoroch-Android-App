@@ -38,29 +38,28 @@ jobs:
         shell: bash
         run: ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
 
-      # Surfaces the exact `e:` compiler errors / test failures on the run's Summary tab
-      # so they can be read without digging through raw logs.
+      # Surfaces the exact failure chain on the run's Summary tab and as
+      # annotations (readable via the public API) without digging through raw logs.
       - name: Publish errors to job summary
         if: failure()
         shell: bash
         run: |
+          set +e
+          LOG="$RUNNER_TEMP/gradle-output.log"
           {
-            echo "### Kotlin/Gradle errors"
+            echo "### Failure context"
             echo '```'
-            grep -E "^e: |error:|What went wrong|FAILED" -A4 "$RUNNER_TEMP/gradle-output.log" | tail -n 120 || true
+            grep -nE "What went wrong|FAILURE:|> Task .*FAILED|Caused by:|^e: |Execution failed|Internal error" "$LOG" | tail -n 80
             echo '```'
-            echo "### Last 60 lines"
+            echo "### Last 80 lines"
             echo '```'
-            tail -n 60 "$RUNNER_TEMP/gradle-output.log"
+            tail -n 80 "$LOG"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          # Also expose each compiler error as an annotation (readable via the public API).
-          grep -E "^e: " "$RUNNER_TEMP/gradle-output.log" | head -25 | while IFS= read -r line; do
-            echo "::error title=Kotlin compiler::${line}"
+          grep -E "What went wrong|FAILURE:|> Task .*FAILED|Caused by:|^e: |Execution failed" "$LOG" | head -40 | while IFS= read -r line; do
+            echo "::error title=Gradle failure::${line}"
           done
-          if ! grep -qE "^e: " "$RUNNER_TEMP/gradle-output.log"; then
-            echo "::error title=Gradle failed::$(grep -E 'What went wrong' -A6 "$RUNNER_TEMP/gradle-output.log" | tail -n 6 | tr '\n' ' ')"
-          fi
+          exit 0
 
       # Advisory only: the repo has no lint config, so pre-existing findings must not block CI.
       - name: Lint (advisory)
