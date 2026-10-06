@@ -1,0 +1,126 @@
+name: Release APK
+
+# Run manually from the Actions tab. Requires these repository secrets:
+#   KEYSTORE_BASE64, STORE_PASSWORD, KEY_PASSWORD  (release keystore, alias "upload")
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: "versionName (e.g. 1.1)"
+        required: true
+        type: string
+      versionCode:
+        description: "versionCode, integer, must increase (e.g. 2)"
+        required: true
+        type: string
+      notes:
+        description: "Release notes shown in the in-app update dialog"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Ensure Android SDK platform 36
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME" -name sdkmanager -type f 2>/dev/null | head -n1 || true)"
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDKMANAGER" "platforms;android-36" > /dev/null
+          else
+            echo "sdkmanager not found; letting AGP auto-download missing SDK components"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run unit tests before releasing
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Restore release keystore from secret
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is not set (see README: release flow)"
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/upload-keystore.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          APP_VERSION_CODE: ${{ inputs.versionCode }}
+          APP_VERSION_NAME: ${{ inputs.versionName }}
+        run: |
+          ./gradlew :app:assembleRelease \
+            -PappVersionCode="$APP_VERSION_CODE" \
+            -PappVersionName="$APP_VERSION_NAME" \
+            --stacktrace
+
+      - name: Package APK and update.json
+        env:
+          APP_VERSION_CODE: ${{ inputs.versionCode }}
+          APP_VERSION_NAME: ${{ inputs.versionName }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/MonthlyKhoroch.apk
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, sys
+          from datetime import datetime, timezone
+
+          try:
+              version_code = int(os.environ["APP_VERSION_CODE"])
+          except ValueError:
+              sys.exit("versionCode must be an integer")
+          if version_code <= 0:
+              sys.exit("versionCode must be positive")
+
+          apk = pathlib.Path("dist/MonthlyKhoroch.apk")
+          if not apk.is_file():
+              sys.exit("APK not found: " + str(apk))
+
+          sha = hashlib.sha256(apk.read_bytes()).hexdigest()
+          manifest = {
+              "versionCode": version_code,
+              "versionName": os.environ["APP_VERSION_NAME"],
+              "apkUrl": "https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/MonthlyKhoroch.apk",
+              "sha256": sha,
+              "notes": os.environ.get("RELEASE_NOTES", ""),
+              "publishedAt": datetime.now(timezone.utc).isoformat(),
+          }
+          pathlib.Path("dist/update.json").write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print("update.json written")
+          PY
+
+      - name: Create GitHub Release with APK + update.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION_CODE: ${{ inputs.versionCode }}
+          APP_VERSION_NAME: ${{ inputs.versionName }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          gh release create "v${APP_VERSION_NAME}+${APP_VERSION_CODE}" \
+            --title "Monthly Khoroch v${APP_VERSION_NAME}" \
+            --notes "${RELEASE_NOTES}" \
+            dist/MonthlyKhoroch.apk dist/update.json
