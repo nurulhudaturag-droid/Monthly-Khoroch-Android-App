@@ -101,11 +101,22 @@ practical**, including on lower-end Android devices.
 
 # ⬇️ Download & Install
 
-APKs are published on the **Releases** page:
+Anyone can install the app directly — **no Play Store, no Google account, no sign-up**.
 
-1. Open **Releases** and download `MonthlyKhoroch.apk` from the latest release.
-2. Open the downloaded file on your Android phone.
-3. Allow install from this source if Android asks, then tap **Install**.
+1.  Open this link on your **phone's browser**:
+    <https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest>
+
+    Or download the APK straight away:
+    <https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/MonthlyKhoroch.apk>
+
+2.  The phone downloads `MonthlyKhoroch.apk`.
+3.  Open the downloaded file.
+4.  If Android asks **"Allow install from this source?"** → allow it, then tap **Install**.
+5.  Open **Monthly Khoroch**.
+
+Newer versions appear on the same **Releases** page, and the app can also
+install them by itself (**Settings → অ্যাপ আপডেট → আপডেট চেক করুন**), no
+need to open the phone browser again.
 
 ------------------------------------------------------------------------
 
@@ -137,7 +148,6 @@ GitHub Actions runs the unit tests on every push (`ci.yml`). The
 **Release APK** workflow (`release.yml`, run manually from the
 **Actions** tab) builds the signed release APK and publishes it
 together with the `update.json` update manifest.
-
 
 # 🧾 Backup & Data Safety
 
