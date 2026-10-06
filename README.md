@@ -1,140 +1,47 @@
-# 📱 Monthly Khoroch --- মাসিক খরচ
+# 📱 Monthly Khoroch (মাসিক খরচ)
 
-**Monthly Khoroch (মাসিক খরচ)** is a lightweight, privacy-focused
-monthly expense tracking and budgeting app designed for simple everyday
-expense management in Bangla.
+A lightweight, privacy-focused **monthly expense & budget tracker** in Bangla.
+No Play Store, no Google account, no cloud — all data stays on your device,
+and the app can update itself directly from this repo's **Releases**.
 
-The app works primarily with local device storage and does not require a
-cloud account, Google Sheets, or a complicated online setup.
+## ✨ Features
 
-This repository contains the full Android app source code
-(`monthly-khoroch/`, Jetpack Compose + Room). Ready-to-install APKs are
-published on the **Releases** page of this repository, and the app can
-update itself directly from those releases.
+- Monthly budget + spending tracker
+- Quick expense entry (**নাম / পরিমাণ / দাম** — quantity never multiplies the amount)
+- Monthly overview, remaining budget & usage %
+- Expense history, search, filter, edit, delete
+- Export / restore backup
+- 100% offline, Bangla interface
 
-------------------------------------------------------------------------
+## ⬇️ Download & Install
 
-## ✨ About the App
+Open the latest release on your **phone's browser**:
 
-**Monthly Khoroch (মাসিক খরচ)** helps you:
+```
+https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest
+```
 
--   Set a monthly budget
--   Record daily expenses
--   Track total monthly spending
--   See remaining budget
--   Monitor budget usage percentage
--   Review monthly expense history
--   Search and filter expenses
--   Edit or delete expenses
--   Export and restore your data
--   Use the app offline
--   Manage expenses in a simple Bangla interface
+Or grab the APK directly:
 
-### 💰 Simple Expense Entry
+```
+https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/MonthlyKhoroch.apk
+```
 
-The expense form is intentionally simple:
+1. Download `MonthlyKhoroch.apk`
+2. Open it → **Install** (allow "install from this source" if asked)
+3. Open **Monthly Khoroch**
 
-1.  **পণ্যের নাম (Product Name)**
-2.  **পরিমাণ (Quantity)**
-3.  **দাম / Amount**
+Future versions can also be installed from inside the app
+(**Settings → অ্যাপ আপডেট → আপডেট চেক করুন**).
 
-There is **no Unit field** and **no Unit Price field**.
+## 🧪 Verification
 
-For example:
+Wireless in-app downloads are verified with **SHA-256** against `update.json`
+before installing — and every release is tested by repository CI before it ships.
 
-> Product: আলু\
-> Quantity: 2.5\
-> Amount: ৳100
+## 🛠️ Build from source
 
-The actual expense is **৳100**, not ৳250.
-
-Quantity is informational only and does not affect the financial
-calculation.
-
-------------------------------------------------------------------------
-
-## 🔐 Privacy First
-
-Monthly Khoroch is designed as a **local-first and privacy-focused**
-personal finance application.
-
-The app is designed without unnecessary:
-
--   Cloud database
--   Google account login
--   Google Sheets integration
--   Advertising SDKs
--   Analytics/tracking
--   Unnecessary background services
--   Unnecessary permissions
-
-Your everyday expense data is intended to remain under your control on
-the device, with manual backup/export available when needed.
-
-------------------------------------------------------------------------
-
-## ⚡ Lightweight & Fast
-
-The app has been optimized for a smooth and responsive experience.
-
-Performance improvements include:
-
--   Lightweight in-memory caching
--   Room/SQLite local database
--   Room as the single source of truth
--   Background database operations
--   Optimized monthly queries
--   Database indexes
--   Reduced unnecessary database loading
--   Current-month fast-path filtering
--   Optimized Jetpack Compose recomposition
--   Stable list keys
--   Lazy expense lists
--   Reduced startup workload
--   Lightweight animations and UI rendering
--   Reduced unnecessary memory usage
-
-The goal is to keep the app **fast, smooth, lightweight, and
-practical**, including on lower-end Android devices.
-
-------------------------------------------------------------------------
-
-# ⬇️ Download & Install
-
-Anyone can install the app directly — **no Play Store, no Google account, no sign-up**.
-
-1.  Open this link on your **phone's browser**:
-    <https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest>
-
-    Or download the APK straight away:
-    <https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/MonthlyKhoroch.apk>
-
-2.  The phone downloads `MonthlyKhoroch.apk`.
-3.  Open the downloaded file.
-4.  If Android asks **"Allow install from this source?"** → allow it, then tap **Install**.
-5.  Open **Monthly Khoroch**.
-
-Newer versions appear on the same **Releases** page, and the app can also
-install them by itself (**Settings → অ্যাপ আপডেট → আপডেট চেক করুন**), no
-need to open the phone browser again.
-
-------------------------------------------------------------------------
-
-# 🔄 In-app Updates
-
-The app does not use the Play Store. It checks this repository's latest
-release every time it opens (and manually from
-**Settings → অ্যাপ আপডেট**):
-
--   If a newer version exists, a Bangla dialog offers the update.
--   The downloaded APK is verified with SHA-256 against `update.json` before installing.
--   Installation always goes through the Android system installer and requires your confirmation.
-
-------------------------------------------------------------------------
-
-# 🛠️ Build from source
-
-Prerequisites: **JDK 17** and **Android SDK platform 36**.
+Prerequisites: **JDK 17+** and **Android SDK 36**.
 
 ```sh
 cd monthly-khoroch
@@ -142,67 +49,25 @@ chmod +x gradlew
 ./gradlew :app:assembleDebug
 ```
 
-Output: `monthly-khoroch/app/build/outputs/apk/debug/app-debug.apk`
+## 💾 Data safety
 
-GitHub Actions runs the unit tests on every push (`ci.yml`). The
-**Release APK** workflow (`release.yml`, run manually from the
-**Actions** tab) builds the signed release APK and publishes it
-together with the `update.json` update manifest.
+Keep a backup: use **Export** in the app periodically, especially before
+uninstalling or changing devices.
 
-# 🧾 Backup & Data Safety
+## ❓ Troubleshooting
 
-Because this is a personal expense application, keeping backups is
-recommended.
+- **Update dialog not showing?** A dialog only appears if the release has a
+  higher `versionCode`. Re-check from **Settings → অ্যাপ আপডেট**.
+- **Android blocks the APK?** Allow "install unknown apps" for your browser,
+  then install again.
 
-Use the app's backup/export feature periodically and keep your backup
-file somewhere safe.
+---
 
-Before uninstalling the application or changing devices, make sure you
-have a current backup.
+## 📂 Repository
 
-------------------------------------------------------------------------
-
-# 🛠️ Troubleshooting
-
-## Update dialog does not appear
-
-The dialog only appears when a newer `versionCode` exists on the
-Releases page. Check your internet connection, or check again from
-**Settings → অ্যাপ আপডেট**.
-
-## Android blocks the APK install
-
-Allow "Install from this source / Unknown apps" for the browser or file
-manager you opened the APK from, then install again.
-
-
-# 📂 Files
-
-``` text
-.
-├── .github/workflows/   → CI and release workflows
-├── monthly-khoroch/     → Android Gradle project (single :app module)
-└── README.md
+```text
+monthly-khoroch/     Android app (Jetpack Compose + Room, single :app)
+.github/workflows/   CI (tests) + Release APK (signed build + update.json)
 ```
 
-
-# 🎯 Project Goal
-
-**Monthly Khoroch (মাসিক খরচ)** is built with one simple goal:
-
-> **Make personal monthly expense tracking simple, fast, private, and
-> easy to use.**
-
-No unnecessary complexity.
-
-Just:
-
-**Budget → Expense Entry → Automatic Tracking → Monthly Overview**
-
-------------------------------------------------------------------------
-
-## 📱 App
-
-**Monthly Khoroch (মাসিক খরচ)**\
-*A lightweight, privacy-focused monthly expense tracking and budgeting
-app in Bangla.*
+*Made simple: **Budget → Expense Entry → Automatic Tracking → Monthly Overview***.
