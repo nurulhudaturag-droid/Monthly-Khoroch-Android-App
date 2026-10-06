@@ -35,7 +35,25 @@ jobs:
         run: chmod +x gradlew
 
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        shell: bash
+        run: ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
+
+      # Surfaces the exact `e:` compiler errors / test failures on the run's Summary tab
+      # so they can be read without digging through raw logs.
+      - name: Publish errors to job summary
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "### Kotlin/Gradle errors"
+            echo '```'
+            grep -E "^e: |error:|What went wrong|FAILED" -A4 "$RUNNER_TEMP/gradle-output.log" | tail -n 120 || true
+            echo '```'
+            echo "### Last 60 lines"
+            echo '```'
+            tail -n 60 "$RUNNER_TEMP/gradle-output.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Advisory only: the repo has no lint config, so pre-existing findings must not block CI.
       - name: Lint (advisory)

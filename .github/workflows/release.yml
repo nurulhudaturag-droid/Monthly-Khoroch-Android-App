@@ -52,7 +52,23 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run unit tests before releasing
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        shell: bash
+        run: ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
+
+      - name: Publish errors to job summary
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "### Kotlin/Gradle errors"
+            echo '```'
+            grep -E "^e: |error:|What went wrong|FAILED" -A4 "$RUNNER_TEMP/gradle-output.log" | tail -n 120 || true
+            echo '```'
+            echo "### Last 60 lines"
+            echo '```'
+            tail -n 60 "$RUNNER_TEMP/gradle-output.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Restore release keystore from secret
         env:
