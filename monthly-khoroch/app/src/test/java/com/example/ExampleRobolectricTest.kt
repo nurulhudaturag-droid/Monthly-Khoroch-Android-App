@@ -34,7 +34,7 @@ class ExampleRobolectricTest {
                 month = 10,
                 day = 3,
                 productName = "চাল",
-                quantity = 5.0,
+                quantity = "৫ কেজি",
                 unit = "কেজি",
                 unitPricePoisha = 7000L,
                 totalPoisha = 35000L

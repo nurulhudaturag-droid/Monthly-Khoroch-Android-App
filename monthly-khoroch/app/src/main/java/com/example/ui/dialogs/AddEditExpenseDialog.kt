@@ -56,7 +56,7 @@ fun AddEditExpenseDialog(
         month: Int,
         day: Int,
         productName: String,
-        quantity: Double,
+        quantity: String,
         unit: String,
         unitPricePoisha: Long,
         totalPoisha: Long
@@ -81,27 +81,20 @@ fun AddEditExpenseDialog(
         )
     }
 
-    // Optional quantity: does NOT multiply by price
+    // Optional quantity: free text, informational only (e.g. "1 KG", "২pcs")
     var quantityText by remember {
         mutableStateOf(
-            initialExpense?.let {
-                if (it.quantity > 1.0) {
-                    if (it.quantity == it.quantity.toLong().toDouble()) it.quantity.toLong().toString()
-                    else it.quantity.toString()
-                } else ""
-            } ?: ""
+            initialExpense?.quantity ?: ""
         )
     }
 
     var nameError by remember { mutableStateOf<String?>(null) }
     var amountError by remember { mutableStateOf<String?>(null) }
-    var quantityError by remember { mutableStateOf<String?>(null) }
     var showFutureWarning by remember { mutableStateOf(false) }
 
     // Direct calculation of total from user entered amount
     val parsedAmountTaka = amountText.toDoubleOrNull() ?: 0.0
     val totalPoisha = BanglaFormatter.takaToPoisha(parsedAmountTaka)
-    val parsedQty = quantityText.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 1.0
 
     fun performSave() {
         val parts = selectedDate.split("-")
@@ -115,7 +108,7 @@ fun AddEditExpenseDialog(
             month,
             day,
             productName.trim(),
-            parsedQty,
+            quantityText.trim(), // Informational free text; never multiplied by price
             "", // Unit completely removed
             0L, // Unit price completely removed
             totalPoisha // User entered actual total amount paid
@@ -136,18 +129,6 @@ fun AddEditExpenseDialog(
             hasError = true
         } else {
             amountError = null
-        }
-
-        if (quantityText.isNotBlank()) {
-            val q = quantityText.toDoubleOrNull()
-            if (q == null || q <= 0.0) {
-                quantityError = "সঠিক পরিমাণ লিখুন (যেমন: ১, ২, ৫)"
-                hasError = true
-            } else {
-                quantityError = null
-            }
-        } else {
-            quantityError = null
         }
 
         if (hasError) return
@@ -291,18 +272,14 @@ fun AddEditExpenseDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Optional Quantity Field (does not multiply by price)
+                // Optional Quantity Field (informational free text; never multiplied by price)
                 OutlinedTextField(
                     value = quantityText,
                     onValueChange = {
                         quantityText = it
-                        if (quantityError != null) quantityError = null
                     },
                     label = { Text("পরিমাণ (ঐচ্ছিক)") },
-                    placeholder = { Text("যেমন: ১, ২, ৫") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    isError = quantityError != null,
-                    supportingText = quantityError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                    placeholder = { Text("যেমন: ১, ২, ১ KG, ২pcs") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()

@@ -91,18 +91,6 @@ object BanglaFormatter {
     }
 
     /**
-     * Formats quantity nicely (e.g. 5 or 2.5) with optional Bangla digits
-     */
-    fun formatQuantity(quantity: Double, useBanglaDigits: Boolean = true): String {
-        val formatted = if (quantity == quantity.toLong().toDouble()) {
-            quantity.toLong().toString()
-        } else {
-            String.format(Locale.US, "%.2f", quantity).trimEnd('0').trimEnd('.')
-        }
-        return if (useBanglaDigits) toBanglaDigits(formatted) else formatted
-    }
-
-    /**
      * Formats date string "yyyy-MM-dd" into "৩ অক্টোবর ২০২৬"
      */
     fun formatDateBangla(dateStr: String): String {

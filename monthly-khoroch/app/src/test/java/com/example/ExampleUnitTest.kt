@@ -26,7 +26,7 @@ class ExampleUnitTest {
         assertEquals("বাজার খরচ", expense.productName)
         assertEquals(50000L, expense.totalPoisha)
         assertEquals(500.0, BanglaFormatter.poishaToTaka(expense.totalPoisha), 0.001)
-        assertEquals(1.0, expense.quantity, 0.001)
+        assertEquals("", expense.quantity)
         assertEquals("", expense.unit)
         assertEquals(0L, expense.unitPricePoisha)
     }
@@ -64,7 +64,7 @@ class ExampleUnitTest {
                 month = 10,
                 day = 1,
                 productName = "চাল",
-                quantity = 10.0,
+                quantity = "১০ কেজি",
                 unit = "কেজি",
                 unitPricePoisha = 7000L,
                 totalPoisha = 70000L // 700 BDT
@@ -75,7 +75,7 @@ class ExampleUnitTest {
                 month = 10,
                 day = 2,
                 productName = "বাস ভাড়া",
-                quantity = 1.0,
+                quantity = "১ পিস",
                 unit = "পিস",
                 unitPricePoisha = 30000L,
                 totalPoisha = 30000L // 300 BDT
@@ -105,7 +105,7 @@ class ExampleUnitTest {
                 month = 10,
                 day = 1,
                 productName = "ডিম",
-                quantity = 12.0,
+                quantity = "১২ পিস",
                 unit = "পিস",
                 unitPricePoisha = 1200L,
                 totalPoisha = 14400L
@@ -129,7 +129,7 @@ class ExampleUnitTest {
                 month = 10,
                 day = 5,
                 productName = "ল্যাপটপ মেরামত",
-                quantity = 1.0,
+                quantity = "১ সার্ভিস",
                 unit = "সার্ভিস",
                 unitPricePoisha = 1200000L,
                 totalPoisha = 1200000L
@@ -208,7 +208,7 @@ class ExampleUnitTest {
                 month = 10,
                 day = i % 28 + 1,
                 productName = "পণ্য $i",
-                quantity = (i % 5 + 1).toDouble(),
+                quantity = (i % 5 + 1).toString(),
                 totalPoisha = 10000L // ৳100 each
             )
         }
@@ -240,14 +240,14 @@ class ExampleUnitTest {
 
     @Test
     fun testInformationalQuantityDoesNotMultiplyFinancialCalculations() {
-        // Product: আলু, Quantity: 2.5, Amount: ৳100 (10,000 poisha)
+        // Product: আলু, Quantity: "১ কেজি", Amount: ৳100 (10,000 poisha)
         val expense = Expense(
             date = "2026-10-04",
             year = 2026,
             month = 10,
             day = 4,
             productName = "আলু",
-            quantity = 2.5,
+            quantity = "১ কেজি",
             totalPoisha = 10000L
         )
 

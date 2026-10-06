@@ -232,10 +232,10 @@ fun ExpenseItemRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (expense.quantity > 1.0) {
+                if (expense.quantity.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "পরিমাণ: ${BanglaFormatter.formatQuantity(expense.quantity)}",
+                        text = "পরিমাণ: ${expense.quantity}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

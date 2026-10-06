@@ -21,7 +21,7 @@ data class Expense(
     val month: Int, // 1 to 12
     val day: Int,
     val productName: String,
-    val quantity: Double = 1.0,
+    val quantity: String = "",
     val unit: String = "",
     val unitPricePoisha: Long = 0L,
     val totalPoisha: Long, // Actual total amount paid for this expense in poisha

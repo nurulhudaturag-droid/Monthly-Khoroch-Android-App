@@ -201,7 +201,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         month: Int,
         day: Int,
         productName: String,
-        quantity: Double = 1.0,
+        quantity: String = "",
         unit: String = "",
         unitPricePoisha: Long = 0L,
         totalPoisha: Long
@@ -229,7 +229,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         day: Int,
         productName: String,
         totalPoisha: Long,
-        quantity: Double = 1.0
+        quantity: String = ""
     ) {
         addExpense(
             date = date,
@@ -251,7 +251,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         month: Int,
         day: Int,
         productName: String,
-        quantity: Double = 1.0,
+        quantity: String = "",
         unit: String = "",
         unitPricePoisha: Long = 0L,
         totalPoisha: Long
@@ -282,7 +282,7 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
         day: Int,
         productName: String,
         totalPoisha: Long,
-        quantity: Double = 1.0
+        quantity: String = ""
     ) {
         updateExpense(
             id = id,

@@ -163,8 +163,8 @@ object SummarySlipExporter {
 
         for (expense in expenses) {
             val nameLines = wrapText(expense.productName, namePaint, colWidth)
-            val meta = if (expense.quantity > 1.0) {
-                "${BanglaFormatter.formatDateBangla(expense.date)} • পরিমাণ: ${BanglaFormatter.formatQuantity(expense.quantity)}"
+            val meta = if (expense.quantity.isNotBlank()) {
+                "${BanglaFormatter.formatDateBangla(expense.date)} • পরিমাণ: ${expense.quantity}"
             } else {
                 BanglaFormatter.formatDateBangla(expense.date)
             }

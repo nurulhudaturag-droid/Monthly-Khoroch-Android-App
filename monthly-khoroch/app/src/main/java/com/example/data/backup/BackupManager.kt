@@ -146,14 +146,9 @@ object BackupManager {
                 val month = eObj.getInt("month")
                 val day = eObj.getInt("day")
                 val productName = eObj.getString("productName")
-                val quantity = eObj.optDouble("quantity", 1.0)
-                val unit = eObj.optString("unit", "")
-                val unitPricePoisha = eObj.optLong("unitPricePoisha", 0L)
-                val totalPoisha = if (eObj.has("totalPoisha")) {
-                    eObj.getLong("totalPoisha")
-                } else {
-                    (quantity * unitPricePoisha).toLong()
-                }
+                // Quantity is informational free text; old numeric backups keep as text
+                val quantity = eObj.optString("quantity", "")
+                val totalPoisha = eObj.optLong("totalPoisha", 0L)
 
                 if (productName.isNotBlank() && totalPoisha >= 0) {
                     expensesList.add(
@@ -164,8 +159,6 @@ object BackupManager {
                             day = day,
                             productName = productName,
                             quantity = quantity,
-                            unit = unit,
-                            unitPricePoisha = unitPricePoisha,
                             totalPoisha = totalPoisha,
                             createdAt = eObj.optLong("createdAt", System.currentTimeMillis()),
                             updatedAt = eObj.optLong("updatedAt", System.currentTimeMillis())
