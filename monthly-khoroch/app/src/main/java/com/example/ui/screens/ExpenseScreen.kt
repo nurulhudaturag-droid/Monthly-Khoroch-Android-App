@@ -1,9 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,7 +19,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,7 +38,6 @@ import com.example.ui.components.EmptyStateView
 import com.example.ui.viewmodel.ExpenseFilter
 import com.example.util.BanglaFormatter
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ExpenseScreen(
     expenses: List<Expense>,
@@ -128,22 +123,19 @@ fun ExpenseScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Filter row: current month (always) + sort options
-            FlowRow(
+            // Filter row: all / highest / lowest in one line
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Text(
-                        text = "চলতি মাস · সকল খরচ",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                FilterChip(
+                    selected = currentFilter == ExpenseFilter.ALL,
+                    onClick = { onFilterChange(ExpenseFilter.ALL) },
+                    label = { Text("সকল খরচ", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("filter_chip_all")
+                )
                 FilterChip(
                     selected = currentFilter == ExpenseFilter.HIGHEST_FIRST,
                     onClick = {
@@ -151,8 +143,10 @@ fun ExpenseScreen(
                             if (currentFilter == ExpenseFilter.HIGHEST_FIRST) ExpenseFilter.ALL else ExpenseFilter.HIGHEST_FIRST
                         )
                     },
-                    label = { Text("সর্বোচ্চ খরচ", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_chip_highest")
+                    label = { Text("সর্বোচ্চ", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("filter_chip_highest")
                 )
                 FilterChip(
                     selected = currentFilter == ExpenseFilter.LOWEST_FIRST,
@@ -161,8 +155,10 @@ fun ExpenseScreen(
                             if (currentFilter == ExpenseFilter.LOWEST_FIRST) ExpenseFilter.ALL else ExpenseFilter.LOWEST_FIRST
                         )
                     },
-                    label = { Text("সর্বনিম্ন খরচ", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_chip_lowest")
+                    label = { Text("সর্বনিম্ন", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("filter_chip_lowest")
                 )
             }
 

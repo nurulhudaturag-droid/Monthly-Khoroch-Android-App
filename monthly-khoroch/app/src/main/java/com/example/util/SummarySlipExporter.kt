@@ -18,74 +18,226 @@ import com.example.data.model.Expense
 import com.example.data.model.MonthYear
 import com.example.data.model.MonthlySummary
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
- * Generates a one-page A4 slip (PNG) summarizing a month: headline numbers
- * followed by an itemized expense list in two columns (left column first,
- * then right column from the top). Fixed line advances guarantee no overlap.
+ * Generates A4 slip PNGs (one per page) summarizing a month: a compact
+ * headline block followed by an itemized expense list laid out as a
+ * 3-column table (item, quantity, amount). Expenses are grouped by date with
+ * a date band above each group. Each page uses two body columns holding up to
+ * [MAX_PER_COLUMN] rows apiece (60 per page); when a month has more expenses a
+ * second (or further) page is produced. Fixed line advances guarantee no overlap.
  */
 object SummarySlipExporter {
 
     const val SLIP_WIDTH = 1240   // A4 @ ~150 dpi portrait
     const val SLIP_HEIGHT = 1754
 
-    private const val PADDING = 60f
-    private const val COL_GAP = 40f
+    private const val MAX_PER_COLUMN = 30
+
+    private const val PADDING = 50f
+    private const val COL_GAP = 34f
+    private const val COL_WIDTH = (SLIP_WIDTH - PADDING * 2f - COL_GAP) / 2f
+    private const val ITEM_WIDTH = COL_WIDTH - 110f - 150f
+    private const val QTY_RIGHT = PADDING + ITEM_WIDTH + 110f
+    private const val ROW_RIGHT = PADDING + COL_WIDTH
+    private const val COL_HEADER_HEIGHT = 32f
+    private const val DATE_BAND_HEIGHT = 36f
+    private const val NAME_LINE_STEP = 23f
+    private const val ROW_PAD = 8f
+
     private val NAVY = Color.rgb(0x0A, 0x19, 0x31)
     private val INK = Color.rgb(0x11, 0x11, 0x11)
     private val MUTED = Color.rgb(0x55, 0x55, 0x55)
     private val DIVIDER = Color.rgb(0xD9, 0xD9, 0xD9)
     private val CARD_BG = Color.rgb(0xF3, 0xF7, 0xFB)
 
-    fun createSlipBitmap(
+    private fun titlePaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 40f
+        color = NAVY
+        textAlign = Paint.Align.CENTER
+    }
+
+    private fun monthPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 24f
+        color = INK
+        textAlign = Paint.Align.CENTER
+    }
+
+    private fun stampPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT
+        textSize = 18f
+        color = MUTED
+        textAlign = Paint.Align.CENTER
+    }
+
+    private fun labelPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT
+        textSize = 22f
+        color = MUTED
+    }
+
+    private fun valuePaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 22f
+        color = NAVY
+    }
+
+    private fun headingPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 24f
+        color = NAVY
+    }
+
+    private fun colHeaderPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 19f
+        color = MUTED
+    }
+
+    private fun datePaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 21f
+        color = NAVY
+    }
+
+    private fun namePaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 19f
+        color = INK
+    }
+
+    private fun qtyPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT
+        textSize = 19f
+        color = MUTED
+    }
+
+    private fun amountPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 19f
+        color = NAVY
+    }
+
+    private fun footerPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = 22f
+        color = NAVY
+        textAlign = Paint.Align.CENTER
+    }
+
+    private fun bodyTopY(): Float =
+        PADDING + 6f + 48f + 32f + 36f + 22f + summaryCardHeight() + 22f + 28f + 20f
+
+    private fun summaryCardHeight(): Float = 28f + 6f * 32f + 14f
+
+    private fun bodyBottomY(): Float = SLIP_HEIGHT - PADDING - 22f
+
+    private fun rowHeight(expense: Expense): Float {
+        val lines = wrapText(expense.productName, namePaint(), ITEM_WIDTH).size
+        return lines * NAME_LINE_STEP + ROW_PAD
+    }
+
+    /** Splits expenses into pages: each page holds up to 2 columns, each
+     *  column up to [MAX_PER_COLUMN] rows (bounded also by vertical space). */
+    private fun partitionExpenses(
+        expenses: List<Expense>,
+        available: Float
+    ): List<List<List<Expense>>> {
+        val pages = mutableListOf<List<List<Expense>>>()
+
+        fun newPage() = mutableListOf<MutableList<Expense>>().apply { add(mutableListOf()) }
+        var page = newPage()
+        var lastDate: String? = null
+        var used = 0f
+
+        for (expense in expenses) {
+            var placed = false
+            var guard = 0
+            while (!placed && guard < 6) {
+                guard++
+                val dateBand = if (expense.date != lastDate) DATE_BAND_HEIGHT else 0f
+                val colHeader = if (page.last().isEmpty()) COL_HEADER_HEIGHT else 0f
+                val need = colHeader + dateBand + rowHeight(expense)
+                val fitsSpace = used + need <= available
+
+                if (page.last().size < MAX_PER_COLUMN && fitsSpace) {
+                    page.last().add(expense)
+                    used += need
+                    lastDate = expense.date
+                    placed = true
+                } else if (page.size < 2) {
+                    page.add(mutableListOf())
+                    used = 0f
+                    lastDate = null
+                } else if (page.isNotEmpty() && page.flatten().isNotEmpty()) {
+                    pages.add(page)
+                    page = newPage()
+                    used = 0f
+                    lastDate = null
+                } else {
+                    // A single expense taller than a fresh column: force it in.
+                    page.last().add(expense)
+                    used = need
+                    lastDate = expense.date
+                    placed = true
+                }
+            }
+        }
+        if (page.flatten().isNotEmpty()) pages.add(page)
+        return pages
+    }
+
+    fun createSlipBitmaps(
         monthYear: MonthYear,
         summary: MonthlySummary,
         expenses: List<Expense>,
         currencySymbol: String = "৳"
+    ): List<Bitmap> {
+        val available = bodyBottomY() - bodyTopY()
+        val pages = partitionExpenses(expenses, available).ifEmpty { listOf(emptyList()) }
+        val totalPages = pages.size
+        return pages.mapIndexed { index, page ->
+            renderPage(page, index + 1, totalPages, monthYear, summary, currencySymbol)
+        }
+    }
+
+    private fun renderPage(
+        page: List<List<Expense>>,
+        pageNo: Int,
+        totalPages: Int,
+        monthYear: MonthYear,
+        summary: MonthlySummary,
+        currencySymbol: String
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(SLIP_WIDTH, SLIP_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.WHITE)
 
-        var y = PADDING + 8f
-        val bold = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.DEFAULT_BOLD
-            color = NAVY
-        }
-        val regular = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.DEFAULT
-            color = INK
-        }
+        var y = PADDING + 6f
 
         // ---- Header ----
-        bold.textSize = 56f
-        bold.textAlign = Paint.Align.CENTER
-        canvas.drawText("মাসিক খরচ", SLIP_WIDTH / 2f, y, bold)
-        y += 66f
+        canvas.drawText("মাসিক খরচ", SLIP_WIDTH / 2f, y, titlePaint())
+        y += 48f
 
-        bold.textSize = 34f
         val monthLabel = "${BanglaFormatter.getMonthName(monthYear.month)} " +
             BanglaFormatter.toBanglaDigits(monthYear.year.toString())
-        canvas.drawText(monthLabel, SLIP_WIDTH / 2f, y, Paint(bold).apply { color = INK })
-        y += 40f
+        canvas.drawText(monthLabel, SLIP_WIDTH / 2f, y, monthPaint())
+        y += 32f
 
-        regular.textSize = 26f
-        regular.textAlign = Paint.Align.CENTER
-        val stamp = "প্রস্তুত: ${BanglaFormatter.toBanglaDigits(SimpleDateFormat("dd.MM.yyyy, hh:mm", Locale.US).format(Date()))}"
-        canvas.drawText(stamp, SLIP_WIDTH / 2f, y, Paint(regular).apply { color = MUTED })
-        y += 50f
-        regular.textAlign = Paint.Align.LEFT
+        val stamp = "প্রস্তুত: ${BanglaFormatter.formatDateTimeBangla(System.currentTimeMillis())}"
+        canvas.drawText(stamp, SLIP_WIDTH / 2f, y, stampPaint())
+        y += 36f
 
-        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 4f, Paint(regular).apply { color = NAVY })
-        y += 30f
-        bold.textAlign = Paint.Align.LEFT
+        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 4f, Paint(stampPaint()).apply {
+            textAlign = Paint.Align.LEFT
+            color = NAVY
+        })
+        y += 22f
 
         // ---- Summary card ----
-        val cardTop = y
-        val card = RectF(PADDING, cardTop, SLIP_WIDTH - PADDING, cardTop + 340f)
+        val card = RectF(PADDING, y, SLIP_WIDTH - PADDING, y + summaryCardHeight())
         canvas.drawRoundRect(card, 20f, 20f, Paint().apply {
             style = Paint.Style.FILL
             color = CARD_BG
@@ -95,25 +247,14 @@ object SummarySlipExporter {
             strokeWidth = 3f
             color = NAVY
         })
-
-        val labelPaint = Paint(regular).apply {
-            textSize = 30f
-            color = MUTED
+        val label = labelPaint()
+        val value = valuePaint().apply { textAlign = Paint.Align.RIGHT }
+        var cy = card.top + 28f
+        fun row(labelText: String, valueText: String) {
+            canvas.drawText(labelText, PADDING + 30f, cy, label)
+            canvas.drawText(valueText, SLIP_WIDTH - PADDING - 30f, cy, value)
+            cy += 32f
         }
-        val valuePaint = Paint(bold).apply {
-            textSize = 30f
-            color = NAVY
-        }
-        val x = PADDING + 40f
-        val xRight = SLIP_WIDTH - PADDING - 40f
-        var cy = cardTop + 50f
-
-        fun row(label: String, value: String) {
-            canvas.drawText(label, x, cy, labelPaint)
-            canvas.drawText(value, xRight, cy, valuePaint.textAlignRight())
-            cy += 54f
-        }
-
         row("বাজেট", BanglaFormatter.formatCurrency(summary.budgetPoisha, currencySymbol))
         row("মোট খরচ", BanglaFormatter.formatCurrency(summary.totalExpensePoisha, currencySymbol))
         row(
@@ -126,91 +267,115 @@ object SummarySlipExporter {
             "সর্বোচ্চ খরচের দিন",
             summary.highestSpendingDay?.let { BanglaFormatter.formatDateBangla(it) } ?: "তথ্য নেই"
         )
-
-        y = cardTop + 380f
+        y = card.bottom + 22f
 
         // ---- Items heading ----
-        Paint(bold).apply {
-            textSize = 36f
-            color = NAVY
-        }.let { paint ->
-            canvas.drawText("খরচের তালিকা", PADDING, y, paint)
-        }
-        y += 22f
-        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 2f, Paint(regular).apply { color = DIVIDER })
-        y += 44f
+        canvas.drawText("খরচের তালিকা", PADDING, y, headingPaint())
+        y += 28f
+        canvas.drawRect(PADDING, y, SLIP_WIDTH - PADDING, y + 2f, Paint(stampPaint()).apply {
+            textAlign = Paint.Align.LEFT
+            color = DIVIDER
+        })
+        y += 20f
 
-        // ---- Itemized list: two columns, left first, then right ----
-        val colWidth = (SLIP_WIDTH - PADDING * 2f - COL_GAP) / 2f
-        val topY = y + 10f
-        var col = 0
-        var itemY = topY
-
-        val namePaint = Paint(bold).apply {
-            textSize = 28f
-            color = INK
-        }
-        val metaPaint = Paint(regular).apply {
-            textSize = 24f
-            color = MUTED
-        }
-        val amountPaint = Paint(bold).apply {
-            textSize = 28f
-            color = NAVY
+        // ---- Table header (one row per body column) ----
+        val title = colHeaderPaint()
+        val bodyTopY = y
+        for (col in page.indices) {
+            val ox = col * (COL_WIDTH + COL_GAP)
+            canvas.drawText("পণ্য", PADDING + ox, bodyTopY, alignLeft(title))
+            canvas.drawText("পরিমাণ", QTY_RIGHT + ox, bodyTopY, alignRight(title))
+            canvas.drawText("দাম", ROW_RIGHT + ox, bodyTopY, alignRight(title))
         }
 
-        fun colX() = PADDING + col * (colWidth + COL_GAP)
+        // ---- Item rows grouped by date ----
+        val name = namePaint()
+        val qty = qtyPaint()
+        val amount = amountPaint().apply { textAlign = Paint.Align.RIGHT }
+        val date = datePaint()
+        val divider = Paint(stampPaint()).apply {
+            textAlign = Paint.Align.LEFT
+            color = DIVIDER
+        }
 
-        for (expense in expenses) {
-            val nameLines = wrapText(expense.productName, namePaint, colWidth)
-            val meta = if (expense.quantity.isNotBlank()) {
-                "${BanglaFormatter.formatDateBangla(expense.date)} • পরিমাণ: ${expense.quantity}"
-            } else {
-                BanglaFormatter.formatDateBangla(expense.date)
-            }
-            val amount = BanglaFormatter.formatCurrency(expense.totalPoisha, currencySymbol)
-            val itemHeight = nameLines.size * 36f + 48f
-
-            if (itemY + itemHeight > SLIP_HEIGHT - PADDING) {
-                if (col == 0) {
-                    col = 1
-                    itemY = topY
-                } else {
-                    break // right column is full -> keep slip to one page
+        for (col in page.indices) {
+            if (page[col].isEmpty()) continue
+            val ix = PADDING + col * (COL_WIDTH + COL_GAP)
+            var rowY = bodyTopY + COL_HEADER_HEIGHT
+            var lastDate: String? = null
+            for (expense in page[col]) {
+                if (expense.date != lastDate) {
+                    canvas.drawText(
+                        BanglaFormatter.formatDateBangla(expense.date), ix, rowY, date
+                    )
+                    canvas.drawRect(ix, rowY + 6f, ix + COL_WIDTH, rowY + 8f, divider)
+                    rowY += DATE_BAND_HEIGHT
+                    lastDate = expense.date
                 }
+                val lines = wrapText(expense.productName, name, ITEM_WIDTH)
+                for (line in lines) {
+                    canvas.drawText(line, ix, rowY, name)
+                    rowY += NAME_LINE_STEP
+                }
+                val baseline = rowY - NAME_LINE_STEP
+                val ox = col * (COL_WIDTH + COL_GAP)
+                if (expense.quantity.isNotBlank()) {
+                    canvas.drawText(expense.quantity, QTY_RIGHT + ox, baseline, alignRight(qty))
+                }
+                canvas.drawText(
+                    BanglaFormatter.formatCurrency(expense.totalPoisha, currencySymbol),
+                    ROW_RIGHT + ox,
+                    baseline,
+                    amount
+                )
+                rowY += ROW_PAD
             }
-            if (itemY + itemHeight > SLIP_HEIGHT - PADDING) break
+        }
 
-            val ix = colX()
-            for ((index, line) in nameLines.withIndex()) {
-                canvas.drawText(line, ix, itemY, namePaint)
-                itemY += 36f
-            }
-            itemY += 2f
-            val rightX = ix + colWidth
-            metaPaint.textAlign = Paint.Align.RIGHT
-            canvas.drawText(meta, rightX, itemY, metaPaint)
-            itemY += 34f
-            amountPaint.textAlign = Paint.Align.RIGHT
-            canvas.drawText(amount, rightX, itemY, amountPaint)
-            itemY += 12f
+        // ---- Page footer ----
+        footerPaint().let { paint ->
+            val text = "পৃষ্ঠা ${BanglaFormatter.toBanglaDigits(pageNo.toString())} / " +
+                BanglaFormatter.toBanglaDigits(totalPages.toString())
+            canvas.drawText(text, SLIP_WIDTH / 2f, SLIP_HEIGHT - 24f, paint)
         }
 
         return bitmap
     }
 
-    private fun Paint.textAlignRight(): Paint {
-        textAlign = Paint.Align.RIGHT
-        return this
+    private fun alignRight(paint: Paint): Paint {
+        paint.textAlign = Paint.Align.RIGHT
+        return paint
     }
 
+    private fun alignLeft(paint: Paint): Paint {
+        paint.textAlign = Paint.Align.LEFT
+        return paint
+    }
+
+    /** Word wraps; single words wider than [maxWidth] are broken by characters. */
     private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
-        val words = text.split(" ")
         val lines = mutableListOf<String>()
         var current = StringBuilder()
-        for (word in words) {
+        for (word in text.trim().split(Regex("\\s+"))) {
+            if (word.isEmpty()) continue
+            if (paint.measureText(word) > maxWidth) {
+                if (current.isNotEmpty()) {
+                    lines.add(current.toString())
+                    current = StringBuilder()
+                }
+                val sb = StringBuilder()
+                for (ch in word) {
+                    if (sb.isNotEmpty() && paint.measureText(sb.toString() + ch) > maxWidth) {
+                        lines.add(sb.toString())
+                        sb.clear()
+                    }
+                    sb.append(ch)
+                }
+                if (sb.isNotEmpty()) lines.add(sb.toString())
+                continue
+            }
             val candidate = if (current.isEmpty()) word else "$current $word"
-            if (paint.measureText(candidate) <= maxWidth || current.isEmpty()) {
+            if (paint.measureText(candidate) <= maxWidth) {
                 current = StringBuilder(candidate)
             } else {
                 lines.add(current.toString())
@@ -218,42 +383,51 @@ object SummarySlipExporter {
             }
         }
         if (current.isNotEmpty()) lines.add(current.toString())
-        return lines.ifEmpty { listOf(text) }
+        return lines.ifEmpty { listOf(text.trim()) }
     }
 
-    fun fileName(monthYear: MonthYear): String =
-        "Monthly_Khoroch_${monthYear.month}_${monthYear.year}.png"
+    fun fileName(monthYear: MonthYear, pageIndex: Int = 1, totalPages: Int = 1): String =
+        if (totalPages > 1) {
+            "Monthly_Khoroch_${monthYear.month}_${monthYear.year}_page${pageIndex}.png"
+        } else {
+            "Monthly_Khoroch_${monthYear.month}_${monthYear.year}.png"
+        }
 
     /**
-     * Saves the slip PNG into the system Downloads folder. API 29+; returns a
+     * Saves all slip pages into the system Downloads folder. API 29+; returns a
      * human readable result or null when it fails or on older Android.
      */
-    fun saveToDownloads(context: Context, bitmap: Bitmap, monthYear: MonthYear): String? {
+    fun saveToDownloads(context: Context, bitmaps: List<Bitmap>, monthYear: MonthYear): String? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
         return try {
-            val name = fileName(monthYear)
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                put(MediaStore.MediaColumns.IS_PENDING, 1)
-            }
-            val resolver = context.contentResolver
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
-            try {
-                resolver.openOutputStream(uri)?.use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                } ?: run {
+            bitmaps.forEachIndexed { index, bitmap ->
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName(monthYear, index + 1, bitmaps.size))
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
+                try {
+                    resolver.openOutputStream(uri)?.use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    } ?: run {
+                        resolver.delete(uri, null, null)
+                        return null
+                    }
+                    values.clear()
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(uri, values, null, null)
+                } catch (e: Exception) {
                     resolver.delete(uri, null, null)
                     return null
                 }
-                values.clear()
-                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                resolver.update(uri, values, null, null)
+            }
+            if (bitmaps.size > 1) {
+                "Downloads ফোল্ডারে ${BanglaFormatter.toBanglaDigits(bitmaps.size.toString())} টি পৃষ্ঠা সংরক্ষণ হয়েছে।"
+            } else {
                 "Downloads ফোল্ডারে সংরক্ষণ হয়েছে।"
-            } catch (e: Exception) {
-                resolver.delete(uri, null, null)
-                null
             }
         } catch (e: Exception) {
             null
@@ -261,24 +435,23 @@ object SummarySlipExporter {
     }
 
     /**
-     * Falls back for older Android: writes the slip to the app cache and opens
-     * the system share sheet so the user can save it anywhere.
+     * Falls back for older Android: writes every page to the app cache and opens
+     * the system share sheet (multi-image) so the user can save them anywhere.
      */
-    fun shareFallback(context: Context, bitmap: Bitmap, monthYear: MonthYear): String? {
+    fun shareFallback(context: Context, bitmaps: List<Bitmap>, monthYear: MonthYear): String? {
         return try {
-            val file = File(context.cacheDir, "updates/${fileName(monthYear)}")
-            file.parentFile?.mkdirs()
-            file.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            val uris = mutableListOf<Uri>()
+            bitmaps.forEachIndexed { index, bitmap ->
+                val file = File(context.cacheDir, "updates/${fileName(monthYear, index + 1, bitmaps.size)}")
+                file.parentFile?.mkdirs()
+                file.outputStream().use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+                uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
             }
-            val uri: Uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-            val send = Intent(Intent.ACTION_SEND).apply {
+            val send = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                 type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, java.util.ArrayList(uris))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(send, "সারসংক্ষেপ সংরক্ষণ করুন"))

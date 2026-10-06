@@ -4,7 +4,9 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -45,13 +47,13 @@ fun SummarySlipDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    var pages by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
 
     LaunchedEffect(monthYear.year, monthYear.month, summary.totalExpensePoisha, expenses.size) {
-        bitmap = withContext(Dispatchers.Default) {
-            SummarySlipExporter.createSlipBitmap(monthYear, summary, expenses, currencySymbol)
-                .asImageBitmap()
+        pages = withContext(Dispatchers.Default) {
+            SummarySlipExporter.createSlipBitmaps(monthYear, summary, expenses, currencySymbol)
+                .map { it.asImageBitmap() }
         }
     }
 
@@ -71,15 +73,23 @@ fun SummarySlipDialog(
                         .heightIn(max = 460.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    val img = bitmap
-                    if (img != null) {
-                        Image(
-                            bitmap = img,
-                            contentDescription = "মাসিক সারসংক্ষেপ slip",
+                    if (pages.isNotEmpty()) {
+                        Column(
                             modifier = Modifier
                                 .verticalScroll(rememberScrollState())
                                 .testTag("slip_preview")
-                        )
+                        ) {
+                            pages.forEachIndexed { index, page ->
+                                Image(
+                                    bitmap = page,
+                                    contentDescription = "মাসিক সারসংক্ষেপ slip",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                if (index < pages.lastIndex) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
+                        }
                     } else {
                         CircularProgressIndicator()
                     }
@@ -89,12 +99,12 @@ fun SummarySlipDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val img = bitmap ?: return@Button
+                    if (pages.isEmpty()) return@Button
                     busy = true
-                    val bit = img.asAndroidBitmap()
-                    val saved = SummarySlipExporter.saveToDownloads(context, bit, monthYear)
+                    val bitmaps = pages.map { it.asAndroidBitmap() }
+                    val saved = SummarySlipExporter.saveToDownloads(context, bitmaps, monthYear)
                     if (saved == null) {
-                        SummarySlipExporter.shareFallback(context, bit, monthYear)
+                        SummarySlipExporter.shareFallback(context, bitmaps, monthYear)
                     }
                     Toast.makeText(
                         context,
@@ -104,7 +114,7 @@ fun SummarySlipDialog(
                     busy = false
                     onDismiss()
                 },
-                enabled = bitmap != null,
+                enabled = pages.isNotEmpty(),
                 modifier = Modifier.testTag("btn_download_summary")
             ) {
                 Text(if (busy) "তৈরি হচ্ছে..." else "ডাউনলোড করুন")
