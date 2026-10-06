@@ -178,11 +178,25 @@ jobs:
           APP_VERSION_CODE: ${{ inputs.versionCode }}
           APP_VERSION_NAME: ${{ inputs.versionName }}
           RELEASE_NOTES: ${{ inputs.notes }}
+          APK_URL: https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/MonthlyKhoroch.apk
+          UPDATE_URL: https://github.com/nurulhudaturag-droid/Monthly-Khoroch-Android-App/releases/latest/download/update.json
         run: |
           set -o pipefail
+          {
+            echo '## 📥 Download the app'
+            echo
+            echo 'Tap **MonthlyKhoroch.apk** below (APK icon, looks like a box) or download straight to your phone:'
+            echo "${APK_URL}"
+            echo
+            echo "*(${UPDATE_URL} is read by the app's in-app updater — you don't need to open it.)*"
+            echo
+            echo '---'
+            echo
+            echo "${RELEASE_NOTES}"
+          } > "$RUNNER_TEMP/release-body.md"
           gh release create "v${APP_VERSION_NAME}+${APP_VERSION_CODE}" \
             --title "Monthly Khoroch v${APP_VERSION_NAME}" \
-            --notes "${RELEASE_NOTES}" \
+            --notes-file "$RUNNER_TEMP/release-body.md" \
             dist/MonthlyKhoroch.apk dist/update.json 2>&1 | tee "$RUNNER_TEMP/gh.log"
 
       - name: Report failure details
