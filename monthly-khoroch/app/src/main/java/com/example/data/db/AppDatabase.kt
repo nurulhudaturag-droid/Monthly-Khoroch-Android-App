@@ -49,8 +49,8 @@ abstract class AppDatabase : RoomDatabase() {
                         "`unitPricePoisha`, `totalPoisha`, `createdAt`, `updatedAt` FROM `expenses`"
                 db.query(selectSQL)?.use { cursor ->
                     while (cursor.moveToNext()) {
-                        val rawQuantity = cursor.getString(6)
-                        val unit = cursor.getString(7)
+                        val rawQuantity = cursor.getString(6) ?: ""
+                        val unit = cursor.getString(7) ?: ""
                         val values = ContentValues().apply {
                             put("id", cursor.getLong(0))
                             put("date", cursor.getString(1))
