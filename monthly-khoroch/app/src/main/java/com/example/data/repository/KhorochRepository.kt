@@ -68,17 +68,12 @@ class KhorochRepository(
         memoryCache.invalidateMonth(year, month)
     }
 
-    fun getAllExpenses(): Flow<List<Expense>> = expenseDao.getAllExpenses()
-
-    suspend fun getAllExpensesSync(): List<Expense> = expenseDao.getAllExpensesSync()
+    fun getAllExpensesSync(): List<Expense> = expenseDao.getAllExpensesSync()
 
     fun getExpensesForMonth(year: Int, month: Int): Flow<List<Expense>> =
         expenseDao.getExpensesForMonth(year, month).onEach { expenses ->
             memoryCache.putRecentExpenses(year, month, expenses)
         }
-
-    fun searchExpenses(query: String): Flow<List<Expense>> =
-        expenseDao.searchExpenses(query)
 
     suspend fun insertExpense(expense: Expense): Long {
         val id = expenseDao.insertExpense(expense)
@@ -166,12 +161,21 @@ class KhorochRepository(
         if (replaceMode) {
             budgetDao.clearAllBudgets()
             expenseDao.clearAllExpenses()
-        }
-        if (budgets.isNotEmpty()) {
-            budgetDao.insertBudgets(budgets)
-        }
-        if (expenses.isNotEmpty()) {
-            expenseDao.insertExpenses(expenses)
+            if (budgets.isNotEmpty()) {
+                budgetDao.insertBudgets(budgets)
+            }
+            if (expenses.isNotEmpty()) {
+                expenseDao.insertExpenses(expenses)
+            }
+        } else {
+            // Merge: insert as brand-new rows (id = 0 = fresh autoincrement) so backup ids can
+            // never collide with — and silently overwrite — rows already on this device.
+            if (budgets.isNotEmpty()) {
+                budgetDao.insertBudgets(budgets.map { it.copy(id = 0L) })
+            }
+            if (expenses.isNotEmpty()) {
+                expenseDao.insertExpenses(expenses.map { it.copy(id = 0L) })
+            }
         }
         memoryCache.clear()
     }

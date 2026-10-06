@@ -2,6 +2,7 @@ package com.example.util
 
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.util.Calendar
 import java.util.Locale
 
 object BanglaFormatter {
@@ -105,6 +106,25 @@ object BanglaFormatter {
             }
         } catch (_: Exception) {}
         return dateStr
+    }
+
+    /**
+     * Formats a timestamp into "৩ অক্টোবর ২০২৬, ৩:০৫ PM" (Bangla month, Bangla digits)
+     */
+    fun formatDateTimeBangla(timeMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = timeMillis }
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        val monthName = getMonthName(cal.get(Calendar.MONTH) + 1)
+        val year = cal.get(Calendar.YEAR)
+        val hourOfDay = cal.get(Calendar.HOUR_OF_DAY)
+        val hour12 = when (hourOfDay) {
+            0 -> 12
+            in 1..12 -> hourOfDay
+            else -> hourOfDay - 12
+        }
+        val minute = String.format(Locale.US, "%02d", cal.get(Calendar.MINUTE))
+        val period = if (hourOfDay < 12) "AM" else "PM"
+        return toBanglaDigits("$day $monthName $year, $hour12:$minute $period")
     }
 
     /**

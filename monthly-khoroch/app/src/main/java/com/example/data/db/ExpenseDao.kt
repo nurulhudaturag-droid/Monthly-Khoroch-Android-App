@@ -13,25 +13,10 @@ import kotlinx.coroutines.flow.Flow
 interface ExpenseDao {
 
     @Query("SELECT * FROM expenses ORDER BY date DESC, id DESC")
-    fun getAllExpenses(): Flow<List<Expense>>
-
-    @Query("SELECT * FROM expenses ORDER BY date DESC, id DESC")
     suspend fun getAllExpensesSync(): List<Expense>
 
     @Query("SELECT * FROM expenses WHERE year = :year AND month = :month ORDER BY date DESC, id DESC")
     fun getExpensesForMonth(year: Int, month: Int): Flow<List<Expense>>
-
-    @Query("SELECT COALESCE(SUM(totalPoisha), 0) FROM expenses WHERE year = :year AND month = :month")
-    fun getTotalExpenseForMonth(year: Int, month: Int): Flow<Long>
-
-    @Query("SELECT COUNT(*) FROM expenses WHERE year = :year AND month = :month")
-    fun getExpenseCountForMonth(year: Int, month: Int): Flow<Int>
-
-    @Query("SELECT * FROM expenses WHERE date = :date ORDER BY id DESC")
-    fun getExpensesForDate(date: String): Flow<List<Expense>>
-
-    @Query("SELECT * FROM expenses WHERE productName LIKE '%' || :query || '%' ORDER BY date DESC, id DESC")
-    fun searchExpenses(query: String): Flow<List<Expense>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: Expense): Long

@@ -65,9 +65,6 @@ import com.example.data.backup.BackupValidationResult
 import com.example.ui.theme.StatusAmber
 import com.example.ui.theme.StatusRed
 import com.example.util.BanglaFormatter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -385,10 +382,8 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             if (lastBackupTimestamp > 0L) {
-                                val fmt = SimpleDateFormat("d MMMM yyyy, h:mm a", Locale.US)
-                                val dateStr = fmt.format(Date(lastBackupTimestamp))
                                 Text(
-                                    text = "শেষ Backup: ${BanglaFormatter.toBanglaDigits(dateStr)}",
+                                    text = "শেষ Backup: ${BanglaFormatter.formatDateTimeBangla(lastBackupTimestamp)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary

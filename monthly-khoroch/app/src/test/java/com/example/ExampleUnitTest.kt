@@ -146,8 +146,15 @@ class ExampleUnitTest {
     fun testBanglaFormatting() {
         assertEquals("১২৩৪৫", BanglaFormatter.toBanglaDigits("12345"))
         assertEquals("12345", BanglaFormatter.toEnglishDigits("১২৩৪৫"))
+        assertEquals("500.50", BanglaFormatter.toEnglishDigits("৫০০.৫০"))
         assertEquals("অক্টোবর", BanglaFormatter.getMonthName(10))
         assertEquals("৩ অক্টোবর ২০২৬", BanglaFormatter.formatDateBangla("2026-10-03"))
+
+        // formatDateTimeBangla renders the Bangla month + Bangla digits from a timestamp
+        val cal = java.util.Calendar.getInstance()
+        cal.set(2026, java.util.Calendar.OCTOBER, 3, 15, 5, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        assertEquals("৩ অক্টোবর ২০২৬, ৩:০৫ PM", BanglaFormatter.formatDateTimeBangla(cal.timeInMillis))
     }
 
     @Test

@@ -81,7 +81,7 @@ fun SetBudgetDialog(
                         if (errorText != null) errorText = null
                     },
                     label = { Text("বাজেট পরিমাণ ($currencySymbol)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = errorText != null,
                     supportingText = errorText?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                     singleLine = true,
@@ -110,7 +110,7 @@ fun SetBudgetDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val amountTaka = budgetText.toDoubleOrNull()
+                    val amountTaka = BanglaFormatter.toEnglishDigits(budgetText).toDoubleOrNull()
                     if (amountTaka == null || amountTaka < 0) {
                         errorText = "সঠিক বাজেট পরিমাণ লিখুন"
                     } else {
@@ -190,7 +190,7 @@ fun BulkBudgetDialog(
                         value = quickFillText,
                         onValueChange = { quickFillText = it },
                         label = { Text("সব মাসে একই বাজেট") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
@@ -230,7 +230,7 @@ fun BulkBudgetDialog(
                             value = amounts[my] ?: "",
                             onValueChange = { amounts[my] = it },
                             label = { Text(currencySymbol) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
                             modifier = Modifier
                                 .weight(1f)
@@ -245,7 +245,7 @@ fun BulkBudgetDialog(
                 onClick = {
                     val result = months.mapNotNull { my ->
                         val text = amounts[my]
-                        val taka = text?.toDoubleOrNull()
+                        val taka = BanglaFormatter.toEnglishDigits(text ?: "").toDoubleOrNull()
                         if (taka != null && taka > 0) {
                             Pair(my, BanglaFormatter.takaToPoisha(taka))
                         } else null

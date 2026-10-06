@@ -93,7 +93,8 @@ fun AddEditExpenseDialog(
     var showFutureWarning by remember { mutableStateOf(false) }
 
     // Direct calculation of total from user entered amount
-    val parsedAmountTaka = amountText.toDoubleOrNull() ?: 0.0
+    // Accept Bangla digits (৫০০) and English digits (500) alike
+    val parsedAmountTaka = BanglaFormatter.toEnglishDigits(amountText).toDoubleOrNull() ?: 0.0
     val totalPoisha = BanglaFormatter.takaToPoisha(parsedAmountTaka)
 
     fun performSave() {

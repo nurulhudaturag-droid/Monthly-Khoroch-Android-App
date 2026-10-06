@@ -49,6 +49,8 @@ abstract class AppDatabase : RoomDatabase() {
                         "`unitPricePoisha`, `totalPoisha`, `createdAt`, `updatedAt` FROM `expenses`"
                 db.query(selectSQL)?.use { cursor ->
                     while (cursor.moveToNext()) {
+                        val rawQuantity = cursor.getString(6)
+                        val unit = cursor.getString(7)
                         val values = ContentValues().apply {
                             put("id", cursor.getLong(0))
                             put("date", cursor.getString(1))
@@ -56,8 +58,8 @@ abstract class AppDatabase : RoomDatabase() {
                             put("month", cursor.getInt(3))
                             put("day", cursor.getInt(4))
                             put("productName", cursor.getString(5))
-                            put("quantity", migrateQuantity(cursor.getString(6)))
-                            put("unit", cursor.getString(7))
+                            put("quantity", migrateQuantity(rawQuantity, unit))
+                            put("unit", unit)
                             put("unitPricePoisha", cursor.getLong(8))
                             put("totalPoisha", cursor.getLong(9))
                             put("createdAt", cursor.getLong(10))
@@ -78,13 +80,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        private fun migrateQuantity(raw: String): String {
+        private fun migrateQuantity(raw: String, unit: String): String {
             val d = raw.toDoubleOrNull()
             if (d == null) return raw
             // 1.0 was the "no quantity entered" default -> blank
             if (d == 1.0) return ""
             // Whole numbers -> "10", fractions stay "2.5"
-            return if (d == Math.floor(d)) d.toLong().toString() else d.toString()
+            val quantity = if (d == Math.floor(d)) d.toLong().toString() else d.toString()
+            // v2 stored the unit separately ("10" + "কেজি") — fold it back in so the
+            // informational free-text quantity reads naturally ("10 কেজি") on first display.
+            return if (unit.isNotBlank()) "$quantity $unit" else quantity
         }
 
         fun getInstance(context: Context): AppDatabase {

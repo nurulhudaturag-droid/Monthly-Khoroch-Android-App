@@ -45,7 +45,6 @@ import java.util.Calendar
 
 enum class ExpenseFilter {
     ALL,
-    THIS_MONTH,
     HIGHEST_FIRST,
     LOWEST_FIRST
 }
@@ -85,13 +84,6 @@ class MonthlyKhorochViewModel(application: Application) : AndroidViewModel(appli
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
             initialValue = repository.getCachedRecentExpenses(initialYear, initialMonth) ?: emptyList()
-        )
-
-    val allExpenses: StateFlow<List<Expense>> = repository.getAllExpenses()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Lazily,
-            initialValue = emptyList()
         )
 
     val allBudgets: StateFlow<List<Budget>> = repository.getAllBudgets()

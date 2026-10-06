@@ -62,6 +62,8 @@ import com.example.ui.theme.MonthlyKhorochTheme
 import com.example.ui.viewmodel.MonthlyKhorochViewModel
 import com.example.util.BanglaFormatter
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.Locale
 
 enum class MainTab {
     HOME,
@@ -161,10 +163,24 @@ fun MainAppScaffold(viewModel: MonthlyKhorochViewModel) {
         currentTab = MainTab.HOME
     }
 
+    // When adding an expense, default the date to today only if the viewed month is the
+    // current calendar month; otherwise default to the 1st of the viewed month so entries
+    // don't silently land in the wrong month while browsing another month.
+    val now = Calendar.getInstance()
+    val defaultAddDate = if (
+        selectedMonthYear.year == now.get(Calendar.YEAR) &&
+        selectedMonthYear.month == now.get(Calendar.MONTH) + 1
+    ) {
+        null
+    } else {
+        String.format(Locale.US, "%04d-%02d-01", selectedMonthYear.year, selectedMonthYear.month)
+    }
+
     // Add or Edit Expense Dialog
     if (showAddExpenseDialog || expenseToEdit != null) {
         AddEditExpenseDialog(
             initialExpense = expenseToEdit,
+            defaultDate = defaultAddDate,
             currencySymbol = currencySymbol,
             onDismiss = {
                 showAddExpenseDialog = false
