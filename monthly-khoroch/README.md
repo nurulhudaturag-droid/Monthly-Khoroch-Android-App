@@ -54,9 +54,9 @@ Workflows live in `.github/workflows/` at the repository root.
 
    | Secret | Value |
    |---|---|
-   | `KEYSTORE_BASE64` | `base64 -w0 upload-keystore.jks` output |
-   | `STORE_PASSWORD` | keystore password |
-   | `KEY_PASSWORD` | key password |
+   | `ANDROID_KEYSTORE_BASE64` | `base64 -w0 upload-keystore.jks` output |
+   | `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+   | `ANDROID_KEY_PASSWORD` | key password |
 
 3. Each release: **Actions → Release APK → Run workflow**, fill `versionName` (e.g. `1.1`), `versionCode` (e.g. `2`, always increasing), and Bangla release notes.
 
