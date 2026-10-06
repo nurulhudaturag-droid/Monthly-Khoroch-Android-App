@@ -59,6 +59,29 @@ jobs:
           grep -E "What went wrong|FAILURE:|> Task .*FAILED|Caused by:|^e: |Execution failed" "$LOG" | head -40 | while IFS= read -r line; do
             echo "::error title=Gradle failure::${line}"
           done
+          python3 - <<'PYEOF' || true
+          import glob, os, xml.etree.ElementTree as ET
+          out = []
+          for f in glob.glob('app/build/test-results/testDebugUnitTest/**/*.xml', recursive=True):
+              try:
+                  root = ET.parse(f).getroot()
+              except Exception:
+                  continue
+              for tc in root.iter('testcase'):
+                  fail = tc.find('failure')
+                  if fail is None:
+                      fail = tc.find('error')
+                  if fail is None:
+                      continue
+                  name = f"{tc.get('classname', '?')}.{tc.get('name', '?')}"
+                  msg = (fail.get('message') or (fail.text or '')).replace('\n', ' ')[:600]
+                  out.append(f"{name} :: {msg}")
+          if out:
+              with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as fh:
+                  fh.write("### Failed tests\n```\n" + "\n".join(out) + "\n```\n")
+              for line in out:
+                  print(f"::error title=Test failed::{line}")
+          PYEOF
           exit 0
 
       # Advisory only: the repo has no lint config, so pre-existing findings must not block CI.
