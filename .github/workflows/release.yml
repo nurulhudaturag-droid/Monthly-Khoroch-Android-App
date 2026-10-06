@@ -52,6 +52,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Validate version inputs
+        env:
+          VC: ${{ inputs.versionCode }}
+          VN: ${{ inputs.versionName }}
+        run: |
+          VC="$(printf '%s' "$VC" | xargs)"
+          VN="$(printf '%s' "$VN" | xargs)"
+          if ! [[ "$VC" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::versionCode must be a positive integer (got: '${VC}'). Examples: 1, 2, 3. NOT '1.0', NOT empty, no spaces."
+            exit 1
+          fi
+          if [ -z "$VN" ]; then
+            echo "::error::versionName cannot be empty (e.g. 1.0)"
+            exit 1
+          fi
+          echo "Releasing versionName=${VN} versionCode=${VC}"
+
       - name: Run unit tests before releasing
         shell: bash
         run: ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
@@ -114,6 +131,8 @@ jobs:
           fi
           cp "$RELEASE_APK" dist/MonthlyKhoroch.apk
           echo "APK ready: $RELEASE_APK"
+          echo "versionCode=[${APP_VERSION_CODE}] versionName=[${APP_VERSION_NAME}]"
+          set +e
           python3 - <<'PY' 2>&1 | tee "$RUNNER_TEMP/pkg.log"
           import hashlib, json, os, pathlib, sys
           from datetime import datetime, timezone
@@ -121,9 +140,11 @@ jobs:
           try:
               version_code = int(os.environ["APP_VERSION_CODE"])
           except ValueError:
-              sys.exit("versionCode must be an integer")
+              sys.exit("versionCode must be an integer (got: " + os.environ.get("APP_VERSION_CODE", "") + ")")
           if version_code <= 0:
               sys.exit("versionCode must be positive")
+          if not os.environ.get("APP_VERSION_NAME", "").strip():
+              sys.exit("versionName must not be empty")
 
           apk = pathlib.Path("dist/MonthlyKhoroch.apk")
           if not apk.is_file():
@@ -144,6 +165,12 @@ jobs:
           )
           print("update.json written")
           PY
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "PYTHON_FAILED rc=$rc"
+            exit $rc
+          fi
 
       - name: Create GitHub Release with APK + update.json
         env:
@@ -170,7 +197,7 @@ jobs:
             tail -n 60 "$RUNNER_TEMP/gh.log" 2>/dev/null
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          tail -n 100 "$RUNNER_TEMP/pkg.log" 2>/dev/null | grep -E "Error|Traceback|APK not found|error|line [0-9]+" | head -20 | while IFS= read -r l; do
-            echo "::error title=Package::${l}"
+          tail -n 60 "$RUNNER_TEMP/pkg.log" 2>/dev/null | sed 's/::/|/g' | while IFS= read -r l; do
+            echo "::error title=Package::$l"
           done
           exit 0
