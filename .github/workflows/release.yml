@@ -101,9 +101,20 @@ jobs:
           APP_VERSION_NAME: ${{ inputs.versionName }}
           RELEASE_NOTES: ${{ inputs.notes }}
         run: |
+          set -euo pipefail
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-release.apk dist/MonthlyKhoroch.apk
-          python3 - <<'PY'
+          RELEASE_APK="$(find app/build/outputs/apk/release -name '*.apk' 2>/dev/null | head -n1)"
+          if [ -z "$RELEASE_APK" ]; then
+            RELEASE_APK="$(find app/build/outputs -name '*release*.apk' 2>/dev/null | head -n1)"
+          fi
+          if [ -z "$RELEASE_APK" ]; then
+            echo "::error::No release APK found under app/build/outputs"
+            find app/build/outputs -maxdepth 5 2>/dev/null >&2
+            exit 1
+          fi
+          cp "$RELEASE_APK" dist/MonthlyKhoroch.apk
+          echo "APK ready: $RELEASE_APK"
+          python3 - <<'PY' 2>&1 | tee "$RUNNER_TEMP/pkg.log"
           import hashlib, json, os, pathlib, sys
           from datetime import datetime, timezone
 
@@ -141,7 +152,25 @@ jobs:
           APP_VERSION_NAME: ${{ inputs.versionName }}
           RELEASE_NOTES: ${{ inputs.notes }}
         run: |
+          set -o pipefail
           gh release create "v${APP_VERSION_NAME}+${APP_VERSION_CODE}" \
             --title "Monthly Khoroch v${APP_VERSION_NAME}" \
             --notes "${RELEASE_NOTES}" \
-            dist/MonthlyKhoroch.apk dist/update.json
+            dist/MonthlyKhoroch.apk dist/update.json 2>&1 | tee "$RUNNER_TEMP/gh.log"
+
+      - name: Report failure details
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo "### Release failure details"
+            echo '```'
+            tail -n 100 "$RUNNER_TEMP/pkg.log" 2>/dev/null
+            tail -n 60 "$RUNNER_TEMP/gh.log" 2>/dev/null
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          tail -n 100 "$RUNNER_TEMP/pkg.log" 2>/dev/null | grep -E "Error|Traceback|APK not found|error|line [0-9]+" | head -20 | while IFS= read -r l; do
+            echo "::error title=Package::${l}"
+          done
+          exit 0
