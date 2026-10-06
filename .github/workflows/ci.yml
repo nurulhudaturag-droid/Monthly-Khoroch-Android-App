@@ -54,6 +54,13 @@ jobs:
             tail -n 60 "$RUNNER_TEMP/gradle-output.log"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # Also expose each compiler error as an annotation (readable via the public API).
+          grep -E "^e: " "$RUNNER_TEMP/gradle-output.log" | head -25 | while IFS= read -r line; do
+            echo "::error title=Kotlin compiler::${line}"
+          done
+          if ! grep -qE "^e: " "$RUNNER_TEMP/gradle-output.log"; then
+            echo "::error title=Gradle failed::$(grep -E 'What went wrong' -A6 "$RUNNER_TEMP/gradle-output.log" | tail -n 6 | tr '\n' ' ')"
+          fi
 
       # Advisory only: the repo has no lint config, so pre-existing findings must not block CI.
       - name: Lint (advisory)
