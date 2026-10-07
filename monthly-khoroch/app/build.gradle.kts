@@ -13,8 +13,8 @@ android {
     minSdk = 24
     targetSdk = 36
     // CI may override via -PappVersionCode=... -PappVersionName=... (see .github/workflows/release.yml)
-    versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 4
-    versionName = (findProperty("appVersionName") as String?) ?: "1.1.2"
+    versionCode = (findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 5
+    versionName = (findProperty("appVersionName") as String?) ?: "1.1.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
